@@ -27,6 +27,7 @@ def train(fi):
     return W
 
 def classify(W, X):
+    #print W
     return 1 if 0. < sum([W[x] for x in X]) else 0
 
 def test(W, fi):
@@ -44,6 +45,7 @@ if __name__ == '__main__':
     ftrain = open('./data/binary_train.csv')
     ftest = open('./data/binary_test.csv')
     W = train(ftrain)
+    print W
     #if 1 < len(sys.argv):
     test(W, ftest)
     #for name, value in W.iteritems():

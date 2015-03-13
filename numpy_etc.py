@@ -26,6 +26,16 @@ print np.random.normal(mu, sigma)
 
 np.genfromtxt('myfile.csv',delimiter=',')
 
+np.vstack(([1,2,3],[4,5,6]))
+#array([[1, 2, 3],
+#       [4, 5, 6]])
+np.column_stack(([1,2,3],[4,5,6]))
+#array([[1, 4],
+#       [2, 5],
+#       [3, 6]])
+np.hstack(([1,2,3],[4,5,6]))
+#array([1, 2, 3, 4, 5, 6])
+
 # shuffle lines of a file
 # cat yourfile.txt | while IFS= read -r f; do printf "%05d %s\n" "$RANDOM" "$f"; done | sort -n | cut -c7- >> new_file
 # wc -l < file_name for # of lines
@@ -43,3 +53,18 @@ def mean_error(predictions, targets):
 
 def mean_boolean_error(predictions, targets):
     return mean([(p != t)   for p, t in zip(predictions, targets)])
+
+def categorizeX(X,Y):
+	labels = list(np.unique(Y))
+	labels_map = {}
+	count = 0
+	for i in labels:
+		try:
+			int(i)
+		except ValueError:
+			print "labels not int/num"
+			labels_map[i] = count
+			count += 1
+	 
+
+

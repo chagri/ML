@@ -20,8 +20,8 @@ class Node:
 
 def parse_data():
 
-    data=np.genfromtxt('data_banknote_authentication.txt',delimiter=',',dtype=float)[:,:-1]
-    y=np.genfromtxt('data_banknote_authentication.txt',delimiter=',',dtype=str)[:,-1]
+    data=np.genfromtxt('./data/binary_data.csv',delimiter=',',dtype=float)[:,1:]
+    y=np.genfromtxt('./data/binary_data.csv',delimiter=',',dtype=str)[:,0]
     labels,y=np.unique(y,return_inverse=True)
     dataset=np.hstack((data,y[:,np.newaxis]))
     random.shuffle(dataset)
@@ -364,7 +364,7 @@ def main(model_type):
 
         print '\nAccuracy: ',np.average(fold_accs)
         print '\nConfusion Matrix: '
-        label_order=['0','1']
+        label_order=['1','2','3']
         print_confusion(conf_matr,label_order)
         print_precision_recall()
             #return conf_matr,label_orders
@@ -412,7 +412,7 @@ def main(model_type):
             #fold_recall.append(test_recall)
         print '\nAccuracy: ',np.average(fold_accs)
         print '\nConfusion Matrix: '
-        label_order=['0','1']
+        label_order=['1','2','3']
         print_confusion(conf_matr,label_order)
         print_precision_recall()
             #return conf_matr,label_orders

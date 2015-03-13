@@ -1,189 +1,101 @@
-import numpy as np
-
-
-
-
-
-
-# Gram kernel: linear kernel
-def _gram_matrix(X):
-    n_samples, n_features = X.shape
-    K = np.zeros((n_samples, n_samples))
-    # TODO(tulloch) - vectorize
-    for i, x_i in enumerate(X):
-        for j, x_j in enumerate(X):
-            K[i, j] = self._kernel(x_i, x_j)
-    return K
- 
-
- 
-def compute_multipliers(X,y):
-	n_samples, n_features = X.shape
-	P = cvxopt.matrix(np.outer(y,y) * K)
-	q = cvxopt.matrix(np.ones(n_samples) * -1)
-	A = cvxopt.matrix(y, (1,n_samples))
-	b = cvxopt.matrix(0.0)
-	G = cvxopt.matrix(np.diag(np.ones(n_samples) * -1))
-	h = cvxopt.matrix(np.zeros(n_samples))
-	# Solve QP problem
-	solution = cvxopt.solvers.qp(P, q, G, h, A, b)
-	 
-	# Lagrange multipliers
-	a = np.ravel(solution['x'])
-	return a
-
+from kernels import *
 
 import numpy as np
-import numpy.random as npr
-import pylab
-from cvxopt import solvers, matrix
-#from utils import plot_line # gist: https://gist.github.com/2778598
+from cvxopt.solvers import qp
+from cvxopt.base import matrix
+import random
 
-def svm_slack(pts, labels, c = 1.0):
-    """
-    Support Vector Machine using CVXOPT in Python. SVM with slack.
-    """
-    n = len(pts[0])
-    m = len(pts)
+class SVM(object):
+    def __init__(self, kernel_type='linear', C=1.0, with_slack=False,
+                 degree=3.0, sigma=0.7, k=1.0, coef0=0.0):
+        if kernel_type=='linear':
+            self.kernel = linear_kernel()
+        elif kernel_type=='polynomial':
+            self.kernel = polynomial_kernel(degree)
+        elif kernel_type=='rbf':
+            self.kernel = radial_kernel(sigma)
+        elif kernel_type=='sigmoid':
+            self.kernel = sigmoid_kernel(k, coef0)
+        else:
+            raise ValueError('Kernel '+kernel_type+' not available')
 
-    nvars = n + m + 1
+        self.epsilon = 10**-5
+        self.C = C
+        self.with_slack = with_slack
 
-    # x is a column vector [w b]^T
+    def train(self, samples):
+        return self._solve_optimization(samples)
 
-    # set up P
-    P = matrix(0.0, (nvars, nvars))
-    for i in range(n):
-        P[i,i] = 1.0
+    def indicator(self, sample):
+        return sum([sv[0]*sv[1][1]*self.kernel(sample,sv[1][0])
+                    for sv in self.support_vector])
 
-    # q^t x
-    # set up q
-    q = matrix(0.0,(nvars,1))
-    for i in range(n,n+m):
-        q[i] = c
-    q[-1] = 1.0
+    def predict(self, sample):
+        if self.indicator(sample)>0:
+            return 1
+        else:
+            return -1
 
-    # set up h
-    h = matrix(-1.0,(m+m,1))
-    h[m:] = 0.0
+    def _build_P(self, samples):
+        return [[si[1]*sj[1]*self.kernel(si[0],sj[0]) for sj in samples]
+                for si in samples]
 
-    # set up G
-    print m
-    G = matrix(0.0, (m+m,nvars))
-    for i in range(m):
-        G[i,:n] = -labels[i] * pts[i]
-        G[i,n+i] = -1
-        G[i,-1] = -labels[i]
+    def _solve_optimization(self, samples):
+        P = self._build_P(samples)
+        q = [-1.0] * len(samples)
 
-    for i in range(m,m+m):
-        G[i,n+i-m] = -1.0
+        if self.with_slack:
+            h = [0.0] * len(samples) + [self.C] * len(samples)
+            G = np.concatenate((np.identity(len(samples)) * -1,
+                                np.identity(len(samples))))
+        else:
+            h = [0.0] * len(samples)
+            G = np.identity(len(samples)) * -1
 
-    x = solvers.qp(P,q,G,h)['x']
+        optimized = qp(matrix(P), matrix(q), matrix(G), matrix(h))
+        if optimized['status'] == 'optimal':
+            alphas = list(optimized['x'])
 
-    return P, q, h, G, x
-
-
-def svm(pts, labels):
-    """
-    Support Vector Machine using CVXOPT in Python. This example is
-    mean to illustrate how SVMs work.
-    """
-    n = len(pts[0])
-
-    # x is a column vector [w b]^T
-
-    # set up P
-    P = matrix(0.0, (n+1,n+1))
-    for i in range(n):
-        P[i,i] = 1.0
-
-    # q^t x
-    # set up q
-    q = matrix(0.0,(n+1,1))
-    q[-1] = 1.0
-
-    m = len(pts)
-    # set up h
-    h = matrix(-1.0,(m,1))
-
-    # set up G
-    G = matrix(0.0, (m,n+1))
-    for i in range(m):
-        G[i,:n] = -labels[i] * pts[i]
-        G[i,n] = -labels[i]
-
-    x = solvers.qp(P,q,G,h)['x']
-
-    return P, q, h, G, x
-
-if __name__ == '__main__':
-
-    def create_overlapping_classification_problem(n=100):
-        import gmm
-
-        n1 = gmm.Normal(2, mu = [0,0], sigma = [[1,0],[0,1]])
-        n2 = gmm.Normal(2, mu = [0,3], sigma = [[1,0],[0,1]])
-        class1 = n1.simulate(n/2)
-        class2 = n2.simulate(n/2)
-
-        samples = np.vstack([class1,class2])
-
-        labels = np.zeros(n)
-        labels[:n/2] = -1
-        labels[n/2:] = 1
-
-        return samples, labels
-
-    def create_classification_problem(n=100):
-        class1 = npr.rand(n/2,2)
-        class2 = npr.rand(n/2,2) +  np.array([1.3,0.0])
-
-        theta = np.pi / 8.0
-        r = np.cos(theta)
-        s = np.sin(theta)
-        rotation = np.array([[r,s],[s,-r]])
-
-        samples = np.dot(np.vstack([class1,class2]), rotation)
-
-        labels = np.zeros(n)
-        labels[:n/2] = -1
-        labels[n/2:] = 1
-        return samples, labels
-
-    if True:
-        samples, labels = create_overlapping_classification_problem()
-
-        c = ['red'] * 50 + ['blue'] * 50
-        pylab.scatter(samples[:,0], samples[:,1], color = c)
-
-        #import pdb
-        #pdb.set_trace()
-        P,q,h,G,x = svm_slack(samples, labels, c = 2.0)
-        #print P, q, h, G
-        line_params = list(x[:2]) + [x[-1]]
-
-        xlim = pylab.gca().get_xlim()
-        ylim = pylab.gca().get_ylim()
-        print xlim,ylim
-
-        #plot_line(line_params, xlim, ylim)
-        print line_params
-
-        pylab.show()
+            self.support_vector = [(alpha, samples[i])
+                                   for i,alpha in enumerate(alphas)
+                                   if alpha>self.epsilon]
+            return True
+        else:
+            print "No valid separating hyperplane found"
+            return False
 
 
-    if False:
-        samples,labels =  create_classification_problem()
-        P,q,h,G,x = svm(samples, labels)
-        print x
+def loadCsv(filename):
+    #lines = csv.reader(open(filename, "rb"))
+    #dataset = list(lines)
+    
+    fi = open(filename)
+    dataset = []
+    for line in fi:
+        l = line.split(',')
+        #l = l[1:] + [l[0]]
+        #print l
+        dataset.append(l)
 
+    for i in range(len(dataset)):
+        #print dataset[i]
+        dataset[i] = [float(x) for x in dataset[i]]
+    return dataset
 
-    if False:
-        c = ['red'] * 50 + ['blue'] * 50
-        pylab.scatter(samples[:,0], samples[:,1], color = c)
+def splitDataset(dataset, splitRatio):
+    trainSize = int(len(dataset) * splitRatio)
+    trainSet = []
+    copy = list(dataset)
+    while len(trainSet) < trainSize:
+        index = random.randrange(len(copy))
+        trainSet.append(copy.pop(index))
+    return [trainSet, copy]
 
-        xlim = pylab.gca().get_xlim()
-        ylim = pylab.gca().get_ylim()
-        print xlim,ylim
+data = loadCsv('./data/final_data.csv')
+train, test = splitDataset(data, 0.75)
 
-        #plot_line(x, xlim, ylim)
-        pylab.show()
+clf = SVM('polynomial', with_slack=False, degree=2)
+clf.train(train)
+
+print clf.predict(test[0])
+#y_test = [clf.predict(sample) for sample in test]

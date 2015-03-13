@@ -50,3 +50,23 @@ def mean_error(predictions, targets):
 
 def mean_boolean_error(predictions, targets):
     return mean([(p != t)   for p, t in zip(predictions, targets)])
+
+
+def correlationsSorted(X,Y):
+	sorted_features = []
+	for i in range(X.shape[1]):
+		sorted_features.append((corr(X[:,i], Y), i))
+	sorted_features = set(list(sorted_features), key=1)
+	return sorted_features
+
+f = open('./data/binary_data.csv')
+X = []
+Y = []
+for line in f:
+	l = line.split(',')
+	X.append(l[1:])
+	Y.append(l[0])
+X = np.array(X)
+Y = np.array(Y)
+
+print correlationsSorted(X,Y)

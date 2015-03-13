@@ -88,3 +88,7 @@ def learningcurve(learner, dataset, trials=10, sizes=None):
         return train_and_test(learner, dataset, 0, size)
     return [(size, mean([score(learner, size) for t in range(trials)]))
             for size in sizes]
+
+
+
+
