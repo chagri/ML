@@ -17,6 +17,30 @@ with open('./data/sentences.pickle', 'rb') as handle:
 '''
 
 
+def read_data(path, ignore_header=True,  max_line=-1):
+    """ Reads data from file. """
+    csv_file_object = csv.reader(open(path, 'rb'))
+    if ignore_header:
+        header = csv_file_object.next()
+    x = []
+    for row in csv_file_object:
+        if max_line >= 0 and len(row) >= max_line:
+            break
+        x.append(row)
+    return x
+
+def mean(numbers):
+    return sum(numbers)/float(len(numbers))
+
+def stdev(numbers):
+    avg = mean(numbers)
+    variance = sum([pow(x-avg,2) for x in numbers])/float(len(numbers)-1)
+    return math.sqrt(variance)
+
+def get_mean_std_feature(dataset):
+	summaries = [(mean(attribute), stdev(attribute)) for attribute in zip(*dataset)]
+	return summaries
+
 #uniform
 print random.uniform(-1,1)
 mu = 0
@@ -24,7 +48,7 @@ sigma = 2
 print np.random.normal(mu, sigma)
 
 
-np.genfromtxt('myfile.csv',delimiter=',')
+#np.genfromtxt('myfile.csv',delimiter=',')
 
 np.vstack(([1,2,3],[4,5,6]))
 #array([[1, 2, 3],
@@ -65,6 +89,30 @@ def categorizeX(X,Y):
 			print "labels not int/num"
 			labels_map[i] = count
 			count += 1
-	 
 
 
+############################## HANDLING MISSING VALS #################################################
+
+# http://students.mimuw.edu.pl/~pbechler/numpy_doc/user/basics.io.genfromtxt.html
+# http://nbviewer.ipython.org/github/rasbt/python_reference/blob/master/tutorials/numpy_nan_quickguide.ipynb#Sections
+# missing values in genfromtext if are there then are repaced with nan vales to test 
+# whether missing values are there check np.isnan(val)
+# create a mask if say data's name is data: then the mask for each element: np.isnan(data): it is a bool table 
+# use np.count_nonzero(np.isnan(data)) 
+# with table with nans: np.sum does not work so use: np.nansum(data)
+# column sum: np.nansum(data, axis=0) and axis=1 for row
+# remove all those rows which has missing values: ary[~np.isnan(data).any(1)]
+# convert missing vals to 0: data0 = np.nan_to_num(data)
+
+def handle_missing_data():
+	data=np.genfromtxt('./data/missing_val_data.csv',delimiter=',',dtype=float,invalid_raise=False,
+               missing_values='',
+               usemask=False,
+               filling_values=9999999999999)[:,:-1]
+
+	for i in data:
+		for k in i:
+			if (k==9999999999999):
+				print "yo"
+
+handle_missing_data()
