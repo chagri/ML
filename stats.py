@@ -4,6 +4,7 @@ from scipy.stats import ks_2samp
 from scipy.stats import spearmanr
 from scipy.stats import mannwhitneyu
 from scipy.stats import ttest_1samp
+from scipy.stats import chisquare
 import scipy 
 
 
@@ -25,6 +26,10 @@ def tTest(X,m):
 	t, p = ttest_1samp(x, m)
 	return (t,p)
 
+def chi2(X,Y):
+	c,p = chisquare(X)
+	return (c,p)
+
 def manwhitneyUtest(X,Y):
 	# non-parametric T test
 	return mannwhitneyu(X,Y)[1]
@@ -34,6 +39,7 @@ X = [1,2,3,4]
 Y = [4,5,1,3]
 
 print corr(X,Y)
+print chi2(X,Y)
 D,p = ks2sample(X,Y)
 print D,p
 print manwhitneyUtest(X,Y)
