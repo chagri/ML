@@ -7,8 +7,8 @@ N = 98 # the size of the training set
 num_test_vals = 25 # the size of the test set
 test_size = 10  # the number of elements to use from the test set
 lambdas = [1e-3, 1e-2, 1e-1, 1]
-num_epochs = 50
-num_steps = 100
+num_epochs = 5
+num_steps = 10
 
 def main():
   for i in lambdas:

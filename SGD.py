@@ -95,7 +95,7 @@ X_test = np.array(X_test)
 Y_test  = np.array(Y_test)
 
 m, n = np.shape(X_train)
-numIterations= 10
+numIterations= 100000
 alpha = 0.000000000005
 theta = np.ones(n)
 theta = gradientDescent(X_train, Y_train, theta, alpha, m, numIterations)
